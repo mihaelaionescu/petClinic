@@ -1,9 +1,6 @@
 package com.endava.petclinic;
 
-import com.endava.petclinic.models.Owner;
-import com.endava.petclinic.models.Pet;
-import com.endava.petclinic.models.Type;
-import com.endava.petclinic.models.Visit;
+import com.endava.petclinic.models.*;
 import com.endava.petclinic.util.EnvReader;
 import com.github.javafaker.Faker;
 import io.restassured.http.ContentType;
@@ -449,5 +446,100 @@ public class PetClinicTest {
 
     }
 
+    @Test
+    public void testSecured(){
+        Owner owner = new Owner();
+        owner.setAddress(faker.address().streetAddress());
+        owner.setCity(faker.address().city());
+        owner.setFirstName(faker.name().firstName());
+        owner.setLastName(faker.name().lastName());
+        owner.setTelephone(faker.number().digits(10));
+
+
+        ValidatableResponse response = given()
+                .baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getBasePathSecured())
+                .auth().preemptive().basic("admin", "admin")
+                .contentType(ContentType.JSON)
+                .body(owner)
+                .log().all()
+                .post(EnvReader.getApiOwners())
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_CREATED);
+
+        Integer id = response.extract().jsonPath().getInt("id");
+
+        ValidatableResponse getResponse = given()
+                .baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getBasePathSecured())
+                .auth().preemptive().basic("admin", "admin")
+                .pathParam("ownerId", id)
+                .log().all()
+                .get(EnvReader.getApiOwners()+"/{ownerId}")
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_OK);
+
+        Owner actualOwner = getResponse.extract().as(Owner.class);
+
+        assertThat(actualOwner, is(owner));
+
+    }
+
+    @Test
+    public void testUser(){
+        //create new user
+        User user = new User(faker.internet().password(),faker.name().username(), "OWNER_ADMIN");
+
+        given().baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getBasePathSecured())
+                .auth().preemptive().basic("admin", "admin")
+                .contentType(ContentType.JSON)
+                .body(user)
+                .log().all()
+                .post(EnvReader.getApiUsers())
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_CREATED);
+
+        //create new owner
+        Owner owner = new Owner();
+        owner.setAddress(faker.address().streetAddress());
+        owner.setCity(faker.address().city());
+        owner.setFirstName(faker.name().firstName());
+        owner.setLastName(faker.name().lastName());
+        owner.setTelephone(faker.number().digits(10));
+
+
+        ValidatableResponse response = given()
+                .baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getBasePathSecured())
+                .auth().preemptive().basic(user.getUsername(), user.getPassword())
+                .contentType(ContentType.JSON)
+                .body(owner)
+                .log().all()
+                .post(EnvReader.getApiOwners())
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_CREATED);
+
+        Integer id = response.extract().jsonPath().getInt("id");
+
+        ValidatableResponse getResponse = given()
+                .baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getBasePathSecured())
+                .auth().preemptive().basic(user.getUsername(), user.getPassword())
+                .pathParam("ownerId", id)
+                .log().all()
+                .get(EnvReader.getApiOwners()+"/{ownerId}")
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_OK);
+
+        Owner actualOwner = getResponse.extract().as(Owner.class);
+
+        assertThat(actualOwner, is(owner));
+    }
 
 }

@@ -52,5 +52,11 @@ public class EnvReader {
         return  properties.getProperty("apiVisits");
     }
 
+    public static String getBasePathSecured(){
+        return properties.getProperty("basePathSecured");
+    }
+    public static String getApiUsers(){
+        return properties.getProperty("apiUsers");
+    }
 
 }
