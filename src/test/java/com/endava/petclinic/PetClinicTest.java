@@ -13,8 +13,11 @@ import org.apache.http.HttpStatus;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import javax.xml.stream.events.EndDocument;
+import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -230,7 +233,221 @@ public class PetClinicTest {
 
         Visit actualVisit = responseCheckVisit.extract().as(Visit.class);
 
+        //visit.setId(idVisit);
+
         assertThat(actualVisit, is(visit));
 
     }
+
+    @Test
+    public void putOwner(){
+        Owner owner = new Owner();
+        owner.setFirstName(faker.name().firstName());
+        owner.setLastName(faker.name().lastName());
+        owner.setCity(faker.address().city());
+        owner.setAddress(faker.address().streetAddress());
+        owner.setTelephone(faker.number().digits(10));
+
+        ValidatableResponse ownerResponse = given().baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getbasePath())
+                .contentType(ContentType.JSON)
+                .body(owner)
+                .log().all()
+                .post(EnvReader.getApiOwners())
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_CREATED);
+
+        owner.setId(ownerResponse.extract().jsonPath().getInt("id"));
+
+        owner.setFirstName(faker.name().firstName());
+        owner.setCity(faker.address().city());
+
+        given().baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getbasePath())
+                .contentType(ContentType.JSON)
+                .body(owner)
+                .pathParam("ownerId", owner.getId())
+                .log().all()
+                .put(EnvReader.getApiOwners()+"/{ownerId}")
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_NO_CONTENT);
+
+
+        ValidatableResponse getResponse = given().baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getbasePath())
+                .pathParam("ownerId", owner.getId())
+                .log().all()
+                .get(EnvReader.getApiOwners()+"/{ownerId}")
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_OK);
+
+        Owner actualOwner = getResponse.extract().as(Owner.class);
+
+        assertThat(actualOwner,is(owner));
+
+    }
+
+    @Test
+    public void postPet(){
+        //creezi un owner, creezi un owner, legi ownerul de pet
+        //la fel si la pet type
+        //add owner
+        Owner owner= new Owner();
+        owner.setFirstName(faker.name().firstName());
+        owner.setLastName(faker.name().lastName());
+        owner.setCity(faker.address().city());
+        owner.setAddress(faker.address().streetAddress());
+        owner.setTelephone(faker.number().digits(10));
+
+        ValidatableResponse postOwner = given().baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getbasePath())
+                .contentType(ContentType.JSON)
+                .body(owner)
+                .log().all()
+                .post(EnvReader.getApiOwners())
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_CREATED);
+
+        owner.setId(postOwner.extract().jsonPath().getInt("id"));
+
+        Type typePet = new Type(faker.animal().name());
+
+        ValidatableResponse postType = given().baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getbasePath())
+                .contentType(ContentType.JSON)
+                .body(typePet)
+                .log().all()
+                .post(EnvReader.getApiPetTypes())
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_CREATED);
+
+        typePet.setId(postType.extract().jsonPath().getInt("id"));
+
+        Pet pet = new Pet();
+        pet.setOwner(owner);
+        pet.setType(typePet);
+        pet.setName(faker.name().firstName());
+        //metoda pt birthDate fara generare manuala
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd");
+        pet.setBirthDate(formatter.format(faker.date().birthday(0,10)));
+
+        ValidatableResponse postPet = given().baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getbasePath())
+                .contentType(ContentType.JSON)
+                .body(pet)
+                .log().all()
+                .post(EnvReader.getApiPets())
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_CREATED);
+
+       // pet.setId(postOwner.extract().jsonPath().getInt("id"));
+
+        Pet actualPet = postPet.extract().as(Pet.class);
+
+        assertThat(actualPet, is(pet));
+
+        //get owner to see that pet was added
+        given().baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getbasePath())
+                .pathParam("ownerId", owner.getId())
+                .get(EnvReader.getApiOwners()+"/{ownerId}")
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_OK);
+
+
+    }
+
+    @Test
+    public void postVisitTest(){
+
+        Owner owner= new Owner();
+        owner.setFirstName(faker.name().firstName());
+        owner.setLastName(faker.name().lastName());
+        owner.setCity(faker.address().city());
+        owner.setAddress(faker.address().streetAddress());
+        owner.setTelephone(faker.number().digits(10));
+
+        ValidatableResponse postOwner = given().baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getbasePath())
+                .contentType(ContentType.JSON)
+                .body(owner)
+                .log().all()
+                .post(EnvReader.getApiOwners())
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_CREATED);
+
+        owner.setId(postOwner.extract().jsonPath().getInt("id"));
+
+        Type typePet = new Type(faker.animal().name());
+
+        ValidatableResponse postType = given().baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getbasePath())
+                .contentType(ContentType.JSON)
+                .body(typePet)
+                .log().all()
+                .post(EnvReader.getApiPetTypes())
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_CREATED);
+
+        typePet.setId(postType.extract().jsonPath().getInt("id"));
+
+        Pet pet = new Pet();
+        pet.setOwner(owner);
+        pet.setType(typePet);
+        pet.setName(faker.name().firstName());
+        //metoda pt birthDate fara generare manuala
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd");
+        pet.setBirthDate(formatter.format(faker.date().birthday(0,10)));
+
+        ValidatableResponse postPet = given().baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getbasePath())
+                .contentType(ContentType.JSON)
+                .body(pet)
+                .log().all()
+                .post(EnvReader.getApiPets())
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_CREATED);
+
+        pet.setId(postPet.extract().jsonPath().getInt("id"));
+
+        //Integer idPet = postPet.extract().jsonPath().getInt("id");
+
+        //returneaza o data in trecut cel mult 10 zile
+        String dateV = formatter.format(faker.date().past(10, TimeUnit.DAYS));
+        Visit visit = new Visit();
+        visit.setDate(dateV);
+        visit.setDescription(faker.medical().symptoms());
+        visit.setPet(pet);
+
+        ValidatableResponse postVisit = given().baseUri(EnvReader.getBaseUri())
+                .port(EnvReader.getPort())
+                .basePath(EnvReader.getbasePath())
+                .contentType(ContentType.JSON)
+                .body(visit)
+                .log().all()
+                .post(EnvReader.getApiVisits())
+                .prettyPeek()
+                .then().statusCode(HttpStatus.SC_CREATED);
+
+        Visit actualVisit = postVisit.extract().as(Visit.class);
+
+        assertThat(actualVisit, is(visit));
+
+
+
+
+
+    }
+
+
 }
