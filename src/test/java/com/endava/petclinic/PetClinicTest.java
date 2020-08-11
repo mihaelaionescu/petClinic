@@ -437,9 +437,6 @@ public class PetClinicTest {
         assertThat(actualVisit, is(visit));
 
 
-
-
-
     }
 
     @Test
