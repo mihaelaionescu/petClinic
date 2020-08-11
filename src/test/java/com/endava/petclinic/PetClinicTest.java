@@ -4,21 +4,17 @@ import com.endava.petclinic.models.*;
 import com.endava.petclinic.util.EnvReader;
 import com.github.javafaker.Faker;
 import io.restassured.http.ContentType;
-import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import org.apache.http.HttpStatus;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import javax.xml.stream.events.EndDocument;
 import java.text.SimpleDateFormat;
-import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 public class PetClinicTest {
 
@@ -490,7 +486,7 @@ public class PetClinicTest {
     @Test
     public void testUser(){
         //create new user
-        User user = new User(faker.internet().password(),faker.name().username(), "OWNER_ADMIN");
+        User user = new User(faker.internet().password(),faker.name().username(), RoleName.OWNER_ADMIN);
 
         given().baseUri(EnvReader.getBaseUri())
                 .port(EnvReader.getPort())

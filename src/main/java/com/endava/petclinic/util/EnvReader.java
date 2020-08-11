@@ -55,8 +55,13 @@ public class EnvReader {
     public static String getBasePathSecured(){
         return properties.getProperty("basePathSecured");
     }
+
     public static String getApiUsers(){
         return properties.getProperty("apiUsers");
     }
+
+    public static String getAdminUsername() {return properties.getProperty("admin.username");}
+
+    public static String getAdminPassword() {return properties.getProperty("admin.password");}
 
 }
